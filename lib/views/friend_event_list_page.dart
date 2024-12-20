@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:project/views/gift_list_page.dart';
-import 'package:project/views/edit_event_page.dart';
-import 'package:project/models/EventModel.dart';
 import 'package:project/controllers/event_controller.dart';
+import 'package:project/models/EventModel.dart';
+import 'friend_gift_list_page.dart';
 
-class EventListPage extends StatefulWidget {
-  final String friendName;
+class FriendEventListPage extends StatefulWidget {
   final String currentUserId;
+  final String friendId;
+  final String friendName;
 
-  const EventListPage({
+  const FriendEventListPage({
     Key? key,
-    required this.friendName,
     required this.currentUserId,
+    required this.friendId,
+    required this.friendName,
   }) : super(key: key);
 
   @override
-  State<EventListPage> createState() => _EventListPageState();
+  State<FriendEventListPage> createState() => _FriendEventListPageState();
 }
 
-class _EventListPageState extends State<EventListPage> with SingleTickerProviderStateMixin {
+class _FriendEventListPageState extends State<FriendEventListPage> with SingleTickerProviderStateMixin {
   final EventController _eventController = EventController();
   String _sortBy = 'name';
 
@@ -51,23 +52,14 @@ class _EventListPageState extends State<EventListPage> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        key: const Key('back_button_key'),
         title: Text("${widget.friendName}'s Events"),
         backgroundColor: Colors.pinkAccent,
-        leading: IconButton(
-          key: const Key('back_button'),
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
       ),
       body: FadeTransition(
         opacity: _fadeInAnimation,
         child: Column(
           children: [
             Padding(
-              key: const Key('sort_dropdown'),
               padding: const EdgeInsets.all(8.0),
               child: DropdownButtonFormField<String>(
                 value: _sortBy,
@@ -93,7 +85,7 @@ class _EventListPageState extends State<EventListPage> with SingleTickerProvider
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<List<EventModel>>(
-                stream: _eventController.fetchEventsByUserId(widget.currentUserId),
+                stream: _eventController.fetchEventsByFriend(widget.friendId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -114,61 +106,30 @@ class _EventListPageState extends State<EventListPage> with SingleTickerProvider
                   });
 
                   return ListView.builder(
-                    key: const Key('event_list'),
                     itemCount: events.length,
                     itemBuilder: (context, index) {
                       final event = events[index];
                       return Card(
-                        key: Key('event_card_${index + 1}'), // Adjusted Key
                         color: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
                         margin: const EdgeInsets.symmetric(vertical: 8.0),
                         child: ListTile(
-                          key: Key('event_list_tile_${index + 1}'),
                           title: Text(event.name),
                           subtitle: Text(
                             "Date: ${event.date.toLocal().toString().split(' ')[0]} • ${event.description}",
                           ),
-                          trailing: Row(
-                            key: Key('event_trailing_${index + 1}'),
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                key: Key('edit_button_${index + 1}'),
-                                icon: const Icon(Icons.edit, color: Colors.amber),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditEventPage(
-                                        eventId: event.id,
-                                        existingEvent: event.toMap(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                key: Key('delete_button_${index + 1}'),
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () async {
-                                  await _eventController.deleteEvent(event.id);
-                                  setState(() {});
-                                },
-                              ),
-                            ],
-                          ),
-                          onTap: () async {
+                          onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => GiftListPage(
-                                  userId: widget.currentUserId,
+                                builder: (context) => FriendGiftListPage(
+                                  currentUserId: widget.currentUserId,
                                   eventId: event.id,
+                                  friendId: widget.friendId,
+                                  friendName: widget.friendName,
                                   eventName: event.name,
-                                  isFriend: false,
                                 ),
                               ),
                             );
@@ -186,3 +147,4 @@ class _EventListPageState extends State<EventListPage> with SingleTickerProvider
     );
   }
 }
+
